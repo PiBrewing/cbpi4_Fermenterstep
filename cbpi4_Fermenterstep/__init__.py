@@ -89,7 +89,7 @@ class FermenterRampTempStep(CBPiFermentationStep):
     async def run(self): 
         self.delta_temp = self.target_temp-self.starttemp
         try:
-            self.deltadays = self.delta_temp / self.rate
+            self.deltadays = abs(self.delta_temp / self.rate)
             self.deltaseconds = self.deltadays * 24 * 60 * 60
             self.ratesecond = self.delta_temp/self.deltaseconds
         except Exception as e:
@@ -99,7 +99,8 @@ class FermenterRampTempStep(CBPiFermentationStep):
         if self.target_temp >= self.starttemp:
             logging.info("warmup")
             while self.running == True:
-                await self.calc_target_temp()
+                if self.current_target_temp != self.target_temp:
+                    await self.calc_target_temp()
                 sensor_value = self.get_sensor_value(self.props.get("Sensor", None)).get("value")
                 if sensor_value >= self.target_temp and self.timer.is_running is not True:
                     self.timer.start()
@@ -108,7 +109,8 @@ class FermenterRampTempStep(CBPiFermentationStep):
         elif self.target_temp <= self.starttemp:
             logging.info("Cooldown")
             while self.running == True:
-                await self.calc_target_temp()
+                if self.current_target_temp != self.target_temp:
+                    await self.calc_target_temp()
                 sensor_value = self.get_sensor_value(self.props.get("Sensor", None)).get("value")
                 if sensor_value <= self.target_temp and self.timer.is_running is not True:
                     self.timer.start()
